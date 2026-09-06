@@ -303,6 +303,12 @@ public class VideoLoaderController extends BasePlayerController {
             //} else { // 18+ video or the video is hidden/removed
             //    scheduleNextVideoTimer(5_000);
             //}
+        } else if (acceptAdaptiveFormats(formatInfo) && isTvClient(formatInfo) && formatInfo.containsSabrFormats() && !formatInfo.isLive()) {
+            // TVHTML5 DASH streams come ciphered with a tv-specific player (-tcl/-es6).
+            // The app deciphers with the web player, which yields wrong signatures (403).
+            // Play tv streams through SABR instead, like the VISIONOS fallback does.
+            Log.d(TAG, "Loading video in sabr format (tv client)...");
+            player.openSabr(formatInfo);
         } else if (acceptAdaptiveFormats(formatInfo) && formatInfo.containsDashFormats()) {
             Log.d(TAG, "Loading regular video in dash format...");
 
@@ -496,6 +502,11 @@ public class VideoLoaderController extends BasePlayerController {
             Log.e(TAG, "VideoGroup is null or empty. Can't restart playlist.");
             stopPlayback();
         }
+    }
+
+    private boolean isTvClient(MediaItemFormatInfo formatInfo) {
+        MediaItemFormatInfo.ClientInfo clientInfo = formatInfo.getClientInfo();
+        return clientInfo != null && clientInfo.getClientName() != null && clientInfo.getClientName().startsWith("TVHTML5");
     }
 
     private boolean acceptAdaptiveFormats(MediaItemFormatInfo formatInfo) {
