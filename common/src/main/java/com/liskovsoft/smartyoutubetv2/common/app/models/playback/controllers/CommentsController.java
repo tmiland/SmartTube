@@ -17,6 +17,8 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.CommentsRece
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.AbstractCommentsReceiver;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
+import com.liskovsoft.smartyoutubetv2.common.utils.SimpleEditDialog;
 import io.reactivex.disposables.Disposable;
 
 public class CommentsController extends BasePlayerController {
@@ -132,7 +134,27 @@ public class CommentsController extends BasePlayerController {
             if (mCommentsKey == null && mLiveChatKey == null) {
                 MessageHelpers.showMessage(getContext(), R.string.comments_disabled);
             }
+        } else if (buttonId == R.id.action_comment) {
+            showAddCommentDialog();
         }
+    }
+
+    private void showAddCommentDialog() {
+        Video video = getVideo();
+
+        if (video == null || video.getVideoId() == null) {
+            return;
+        }
+
+        String videoId = video.getVideoId();
+
+        SimpleEditDialog.show(getContext(), getContext().getString(R.string.add_comment), "", newValue -> {
+            RxHelper.execute(
+                    getCommentsService().createCommentObserve(videoId, newValue),
+                    () -> MessageHelpers.showMessage(getContext(), R.string.comment_posted),
+                    e -> MessageHelpers.showMessage(getContext(), R.string.relogin_to_comment));
+            return true;
+        });
     }
 
     @Override
